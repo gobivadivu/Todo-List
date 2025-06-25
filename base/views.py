@@ -20,8 +20,16 @@ class CustomLoginView(LoginView):
 class TaskList(LoginRequiredMixin, ListView):
     model = Task
     context_object_name = 'tasks' #customise our name insted of object_list
-#looks for "model_list.html"
-#add mixin at first
+    #looks for "model_list.html"
+    #add mixin at first
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['tasks'] = context['tasks'].filter(user=self.request.user)
+        context['count'] = context['tasks'].filter(complete=False) #count incomplete items
+        #we set it at context_object_name
+        return context
+
 class TaskDetail(LoginRequiredMixin, DetailView):
     model = Task
     context_object_name = 'task' #customise name instead of object
@@ -32,13 +40,20 @@ class TaskCreate(LoginRequiredMixin,CreateView):
     #look for template with prefix task
     model = Task
     #already gives a model form view
-    fields = '__all__' #list all items in field 
+    fields = ['title', 'description', 'complete'] #list all items in field 
     #or we can create own model form by form_class = TaskForm
     success_url = reverse_lazy('tasks') #redirect on success
 
+    def form_valid(self, form):
+        #user field in create task can be set to any user initaily
+        #to avoid that we write this function and modify the fields attribute
+        #which was earlier set to '__all__'
+        form.instance.user = self.request.user
+        return super(TaskCreate, self).form_valid(form)
+
 class TaskUpdate(LoginRequiredMixin, UpdateView):
     model = Task
-    fields = '__all__'
+    fields = ['title', 'description', 'complete']
     success_url = reverse_lazy('tasks')
 
 class TaskDelete(LoginRequiredMixin, DeleteView):
