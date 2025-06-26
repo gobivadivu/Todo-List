@@ -32,6 +32,7 @@ class RegisterPage(FormView):
             login(self.request, user)
         return HttpResponseRedirect(self.get_success_url())
     
+    #block the authenticated user from accessing the register page
     def get(self, *args, **kwargs):
         if self.request.user.is_authenticated:
             return redirect('tasks')
@@ -49,6 +50,14 @@ class TaskList(LoginRequiredMixin, ListView):
         context['tasks'] = context['tasks'].filter(user=self.request.user)
         context['count'] = context['tasks'].filter(complete=False) #count incomplete items
         #we set it at context_object_name
+
+        search_input = self.request.GET.get('search-area') or ''
+        if search_input:
+            context['tasks'] = context['tasks'].filter(
+                title__startswith = search_input #icontains is other method to filter
+            )
+
+        context['search_input'] = search_input
         return context
 
 class TaskDetail(LoginRequiredMixin, DetailView):
@@ -82,3 +91,4 @@ class TaskDelete(LoginRequiredMixin, DeleteView):
     context_object_name = 'task' 
     success_url = reverse_lazy('tasks')
     #look for template with prefix as model anem and suffix _confirm_delete
+
